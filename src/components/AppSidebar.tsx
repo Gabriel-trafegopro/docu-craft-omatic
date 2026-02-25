@@ -1,6 +1,6 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard, Users, Filter, Share2, Globe, Zap, Clock, LogOut,
+  LayoutDashboard, Users, Filter, Share2, Globe, Zap, Clock, LogOut, Building2,
 } from "lucide-react";
 import { useCompany } from "@/hooks/useCompany";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,6 +17,7 @@ const navItems = [
   { title: "Geográfico", path: "/geo", icon: Globe },
   { title: "Eventos", path: "/events", icon: Zap },
   { title: "Temporal", path: "/temporal", icon: Clock },
+  { title: "Empresas", path: "/companies", icon: Building2 },
 ];
 
 export function AppSidebar() {

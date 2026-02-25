@@ -16,6 +16,7 @@ import EventsPage from "./pages/EventsPage";
 import TemporalPage from "./pages/TemporalPage";
 import AuthPage from "./pages/AuthPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import CompaniesPage from "./pages/CompaniesPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="/geo" element={<ProtectedRoute><CompanyProvider><GeoPage /></CompanyProvider></ProtectedRoute>} />
             <Route path="/events" element={<ProtectedRoute><CompanyProvider><EventsPage /></CompanyProvider></ProtectedRoute>} />
             <Route path="/temporal" element={<ProtectedRoute><CompanyProvider><TemporalPage /></CompanyProvider></ProtectedRoute>} />
+            <Route path="/companies" element={<ProtectedRoute><CompaniesPage /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

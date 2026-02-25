@@ -1,96 +1,50 @@
 
 
-# Autenticacao com Supabase Auth + Protecao de Rotas
+# Login Simplificado — Admin Only
 
 ## Resumo
-Implementar login/signup com email e senha usando Supabase Auth, proteger todas as rotas do dashboard, e adicionar logout na sidebar. Isso permitira que o RLS funcione corretamente, ja que as policies dependem de `auth.uid()` via `get_user_company_ids()`.
+Simplificar a tela de login removendo a aba de "Cadastrar". Voce e o unico usuario do sistema (admin/dono). O login serve apenas para autenticar voce no Supabase, ativando o RLS para que os dados das empresas vinculadas ao seu usuario sejam liberados. Ao entrar, a sidebar mostra todas as empresas ligadas ao seu `user_id` na tabela `user_companies`, e voce alterna entre elas para analisar os dados.
 
 ---
 
-## Etapa 1 — Hook de Autenticacao
+## O que muda
 
-Criar `src/hooks/useAuth.tsx` com:
-- Context provider que escuta `onAuthStateChange` (configurado ANTES de `getSession`)
-- Estado: `user`, `session`, `loading`
-- Funcoes: `signIn(email, password)`, `signUp(email, password)`, `signOut()`
-- Exportar hook `useAuth()`
+### 1. Tela de Login (AuthPage.tsx)
+- Remover as tabs "Entrar / Cadastrar" — so fica o formulario de login (email + senha)
+- Manter o "Esqueci minha senha"
+- Visual limpo: card centralizado com logo, titulo "LeadTracker" e subtitulo "Acesse seu painel de analytics"
 
----
-
-## Etapa 2 — Pagina de Login
-
-Criar `src/pages/AuthPage.tsx` com:
-- Toggle entre Login e Cadastro (tabs ou botao)
-- Formulario: email + senha
-- Botao de submit com loading state
-- Link "Esqueci minha senha" (chama `resetPasswordForEmail` com redirect para `/reset-password`)
-- Visual consistente com o tema escuro do dashboard (fundo `#0d1117`, card centralizado com glow)
-- Mensagens de erro/sucesso usando toast
+### 2. Nada muda no restante
+- O `useCompany` ja busca as empresas do usuario logado via `user_companies`
+- O `ProtectedRoute` ja redireciona para `/auth` se nao houver sessao
+- O `AppSidebar` ja mostra o seletor de empresas e o botao de logout
+- O RLS ja filtra os dados por `get_user_company_ids()` baseado em `auth.uid()`
 
 ---
 
-## Etapa 3 — Pagina de Reset de Senha
+## Fluxo Final
 
-Criar `src/pages/ResetPasswordPage.tsx` com:
-- Detectar `type=recovery` no URL hash
-- Formulario para nova senha
-- Chamar `supabase.auth.updateUser({ password })`
-- Redirecionar para `/` apos sucesso
-
----
-
-## Etapa 4 — Componente de Protecao de Rota
-
-Criar `src/components/ProtectedRoute.tsx`:
-- Se `loading` -> mostrar skeleton/spinner
-- Se `!user` -> redirecionar para `/auth`
-- Se `user` -> renderizar `children`
-
----
-
-## Etapa 5 — Atualizar App.tsx
-
-- Envolver tudo com `AuthProvider`
-- Rota `/auth` -> `AuthPage` (publica)
-- Rota `/reset-password` -> `ResetPasswordPage` (publica)
-- Todas as outras rotas envolvidas em `ProtectedRoute`
-
----
-
-## Etapa 6 — Logout na Sidebar
-
-- Adicionar botao de logout no rodape da `AppSidebar`
-- Mostrar email do usuario logado
-- Chamar `signOut()` e redirecionar para `/auth`
+```text
+Voce abre o sistema
+    |
+    v
+ProtectedRoute verifica sessao
+    |
+    +-- Sem sessao --> /auth (tela de login simples)
+    |
+    +-- Com sessao --> Dashboard
+         |
+         +-- Sidebar mostra TODAS as empresas do seu user_id
+         +-- Voce alterna entre elas no seletor
+         +-- Os dados de cada empresa aparecem nos graficos/tabelas
+```
 
 ---
 
 ## Detalhes Tecnicos
 
-### Arquivos a criar:
-- `src/hooks/useAuth.tsx` — AuthContext + AuthProvider + useAuth hook
-- `src/pages/AuthPage.tsx` — Login/Signup
-- `src/pages/ResetPasswordPage.tsx` — Reset de senha
-- `src/components/ProtectedRoute.tsx` — Guarda de rotas
+### Arquivo a modificar:
+- `src/pages/AuthPage.tsx` — Remover tabs e aba de signup, manter apenas formulario de login com "Esqueci minha senha"
 
-### Arquivos a modificar:
-- `src/App.tsx` — Adicionar AuthProvider, rotas publicas e ProtectedRoute
-- `src/components/AppSidebar.tsx` — Adicionar botao logout e email do usuario
-
-### Fluxo:
-```text
-Usuario abre app
-    |
-    v
-ProtectedRoute verifica sessao
-    |
-    +-- Sem sessao --> /auth (login/signup)
-    |
-    +-- Com sessao --> Dashboard (RLS funciona com auth.uid())
-```
-
-### Seguranca:
-- O `onAuthStateChange` garante que a sessao e atualizada automaticamente
-- O `CompanyProvider` ja usa `supabase.auth.getUser()` para buscar empresas — com auth ativo, o RLS liberara os dados corretos
-- As views (`v_funnel`, `v_lead_stats`, etc.) herdam as policies das tabelas base que usam `get_user_company_ids()` baseado em `auth.uid()`
-
+### Nenhum arquivo novo necessario
+Toda a infraestrutura de auth, protecao de rotas e multi-tenancy ja esta implementada e funcionando.

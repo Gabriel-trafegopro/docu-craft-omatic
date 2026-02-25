@@ -6,33 +6,28 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { Zap, Loader2 } from "lucide-react";
 
 export default function AuthPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp } = useAuth();
 
   if (authLoading) return null;
   if (user) return <Navigate to="/" replace />;
 
-  const handleSubmit = async (mode: "login" | "signup") => {
+  const handleLogin = async () => {
     if (!email || !password) {
       toast({ title: "Preencha todos os campos", variant: "destructive" });
       return;
     }
     setLoading(true);
-    const { error } = mode === "login" ? await signIn(email, password) : await signUp(email, password);
+    const { error } = await signIn(email, password);
     setLoading(false);
-
     if (error) {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
-    } else if (mode === "signup") {
-      toast({ title: "Conta criada!", description: "Verifique seu email para confirmar o cadastro." });
     }
   };
 
@@ -51,6 +46,10 @@ export default function AuthPage() {
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") handleLogin();
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md card-glow">
@@ -59,55 +58,42 @@ export default function AuthPage() {
             <Zap className="h-6 w-6 text-primary" />
           </div>
           <CardTitle className="text-xl">LeadTracker</CardTitle>
-          <CardDescription>Acesse seu dashboard de analytics</CardDescription>
+          <CardDescription>Acesse seu painel de analytics</CardDescription>
         </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="login">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Entrar</TabsTrigger>
-              <TabsTrigger value="signup">Cadastrar</TabsTrigger>
-            </TabsList>
-
-            {(["login", "signup"] as const).map((mode) => (
-              <TabsContent key={mode} value={mode} className="space-y-4 pt-4">
-                <div className="space-y-2">
-                  <Label htmlFor={`${mode}-email`}>Email</Label>
-                  <Input
-                    id={`${mode}-email`}
-                    type="email"
-                    placeholder="seu@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleSubmit(mode)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor={`${mode}-password`}>Senha</Label>
-                  <Input
-                    id={`${mode}-password`}
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleSubmit(mode)}
-                  />
-                </div>
-                <Button className="w-full" disabled={loading} onClick={() => handleSubmit(mode)}>
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {mode === "login" ? "Entrar" : "Criar conta"}
-                </Button>
-                {mode === "login" && (
-                  <button
-                    type="button"
-                    onClick={handleForgotPassword}
-                    className="w-full text-center text-xs text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    Esqueci minha senha
-                  </button>
-                )}
-              </TabsContent>
-            ))}
-          </Tabs>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="seu@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={handleKeyDown}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="password">Senha</Label>
+            <Input
+              id="password"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={handleKeyDown}
+            />
+          </div>
+          <Button className="w-full" disabled={loading} onClick={handleLogin}>
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Entrar
+          </Button>
+          <button
+            type="button"
+            onClick={handleForgotPassword}
+            className="w-full text-center text-xs text-muted-foreground hover:text-primary transition-colors"
+          >
+            Esqueci minha senha
+          </button>
         </CardContent>
       </Card>
     </div>

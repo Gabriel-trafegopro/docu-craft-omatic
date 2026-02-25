@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === "update") {
-      const { id, ...updates } = body;
+      const { id, action: _action, ...updates } = body;
 
       if (!id) {
         return new Response(

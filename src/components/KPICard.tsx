@@ -1,5 +1,4 @@
 import { ReactNode } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
@@ -15,35 +14,38 @@ export function KPICard({ title, value, change, icon, compact }: KPICardProps) {
   const isPositive = change !== undefined && change >= 0;
 
   return (
-    <Card className={cn("border-border", compact && "")}>
-      <CardContent className={cn("flex items-center gap-4", compact ? "p-4" : "p-6")}>
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+    <div className={cn(
+      "card-glow rounded-xl bg-card text-card-foreground",
+      compact ? "p-4" : "p-5"
+    )}>
+      <div className="flex items-center gap-4">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
           {icon}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-medium text-muted-foreground">{title}</p>
-          <p className={cn("font-bold", compact ? "text-lg" : "text-2xl")}>
-            {typeof value === "number" ? value.toLocaleString("pt-BR") : value}
-          </p>
-        </div>
-        {change !== undefined && (
-          <div
-            className={cn(
-              "flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
-              isPositive
-                ? "bg-success/10 text-success"
-                : "bg-destructive/10 text-destructive"
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{title}</p>
+          <div className="flex items-baseline gap-2">
+            <p className={cn("font-bold text-foreground", compact ? "text-lg" : "text-2xl")}>
+              {typeof value === "number" ? value.toLocaleString("pt-BR") : value}
+            </p>
+            {change !== undefined && (
+              <div
+                className={cn(
+                  "flex items-center gap-0.5 text-xs font-semibold",
+                  isPositive ? "text-success" : "text-destructive"
+                )}
+              >
+                {isPositive ? (
+                  <TrendingUp className="h-3 w-3" />
+                ) : (
+                  <TrendingDown className="h-3 w-3" />
+                )}
+                {isPositive ? "+" : ""}{Math.abs(change).toFixed(1)}%
+              </div>
             )}
-          >
-            {isPositive ? (
-              <TrendingUp className="h-3 w-3" />
-            ) : (
-              <TrendingDown className="h-3 w-3" />
-            )}
-            {Math.abs(change).toFixed(1)}%
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -2,33 +2,17 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { KPICard } from "@/components/KPICard";
 import { FunnelChart } from "@/components/FunnelChart";
 import {
-  mockKPIs,
-  mockFunnelConversion,
-  mockFunnelSales,
-  mockVisitsEvents30d,
-  mockUtmSources,
-  mockLeads,
+  mockKPIs, mockFunnelConversion, mockFunnelSales,
+  mockVisitsEvents30d, mockUtmSources, mockLeads,
 } from "@/data/mockData";
 import { Users, Eye, Zap, UserCheck, Activity, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  BarChart, Bar,
 } from "recharts";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 
@@ -38,13 +22,27 @@ const statusColors: Record<string, string> = {
   identificado: "bg-warning/20 text-warning",
 };
 
+const tooltipStyle = {
+  backgroundColor: "hsl(220, 40%, 8%)",
+  border: "1px solid hsl(220, 30%, 18%)",
+  borderRadius: 10,
+  color: "hsl(210, 40%, 98%)",
+  boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+};
+
 export default function DashboardPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Visão geral de performance</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Dashboard</h1>
+            <p className="text-sm text-muted-foreground">Visão geral do desempenho de leads e conversões</p>
+          </div>
+          <div className="flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-medium text-primary">
+            <span className="h-2 w-2 rounded-full bg-primary animate-pulse-dot" />
+            Tempo Real
+          </div>
         </div>
 
         {/* KPI Cards */}
@@ -55,49 +53,60 @@ export default function DashboardPage() {
           <KPICard title="Clientes" value={mockKPIs.customers.value} change={mockKPIs.customers.change} icon={<UserCheck className="h-5 w-5" />} />
         </div>
 
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="grid grid-cols-3 gap-4">
+          <KPICard title="Taxa de Conversão" value="1.9%" change={2.1} icon={<Activity className="h-5 w-5" />} compact />
           <KPICard title="Ativos 7 dias" value={mockKPIs.active7d.value} icon={<Activity className="h-5 w-5" />} compact />
           <KPICard title="Ativos 24h" value={mockKPIs.active24h.value} icon={<Clock className="h-5 w-5" />} compact />
         </div>
 
         {/* Funnels */}
         <div className="grid gap-4 lg:grid-cols-2">
-          <FunnelChart title="Funil de Conversão" data={mockFunnelConversion} />
-          <FunnelChart title="Funil de Vendas" data={mockFunnelSales} />
+          <FunnelChart
+            title="Funil de Conversão"
+            subtitle="Pageviews → Clicks → Checkout → Compras"
+            data={mockFunnelConversion}
+            variant="3d"
+          />
+          <FunnelChart
+            title="Funil de Vendas"
+            subtitle="Clique para ver os leads"
+            data={mockFunnelSales}
+            variant="bars"
+          />
         </div>
 
         {/* Charts */}
         <div className="grid gap-4 lg:grid-cols-2">
-          <Card>
+          <Card className="card-glow">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold">Visitas e Eventos — 30 dias</CardTitle>
+              <CardTitle className="text-sm font-semibold">Visitas e Eventos (últimos 30 dias)</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={260}>
                 <LineChart data={mockVisitsEvents30d}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(217, 33%, 22%)" />
-                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(215, 20%, 65%)" }} />
-                  <YAxis tick={{ fontSize: 10, fill: "hsl(215, 20%, 65%)" }} />
-                  <Tooltip contentStyle={{ backgroundColor: "hsl(217, 33%, 17%)", border: "1px solid hsl(217, 33%, 22%)", borderRadius: 8, color: "hsl(210, 40%, 98%)" }} />
-                  <Line type="monotone" dataKey="visitas" stroke="hsl(217, 91%, 60%)" strokeWidth={2} dot={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 30%, 14%)" />
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(215, 20%, 45%)" }} />
+                  <YAxis tick={{ fontSize: 10, fill: "hsl(215, 20%, 45%)" }} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Line type="monotone" dataKey="visitas" stroke="hsl(25, 95%, 53%)" strokeWidth={2} dot={false} />
                   <Line type="monotone" dataKey="eventos" stroke="hsl(142, 71%, 45%)" strokeWidth={2} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="card-glow">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold">Top 5 UTM Sources</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={mockUtmSources.slice(0, 5)} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(217, 33%, 22%)" />
-                  <XAxis type="number" tick={{ fontSize: 10, fill: "hsl(215, 20%, 65%)" }} />
-                  <YAxis dataKey="source" type="category" tick={{ fontSize: 10, fill: "hsl(215, 20%, 65%)" }} width={70} />
-                  <Tooltip contentStyle={{ backgroundColor: "hsl(217, 33%, 17%)", border: "1px solid hsl(217, 33%, 22%)", borderRadius: 8, color: "hsl(210, 40%, 98%)" }} />
-                  <Bar dataKey="leads" fill="hsl(217, 91%, 60%)" radius={[0, 4, 4, 0]} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 30%, 14%)" />
+                  <XAxis type="number" tick={{ fontSize: 10, fill: "hsl(215, 20%, 45%)" }} />
+                  <YAxis dataKey="source" type="category" tick={{ fontSize: 10, fill: "hsl(215, 20%, 45%)" }} width={70} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Bar dataKey="leads" fill="hsl(25, 95%, 53%)" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -105,7 +114,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Recent Leads */}
-        <Card>
+        <Card className="card-glow">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold">Últimos Leads</CardTitle>
           </CardHeader>
@@ -124,7 +133,7 @@ export default function DashboardPage() {
               </TableHeader>
               <TableBody>
                 {mockLeads.slice(0, 10).map((lead) => (
-                  <TableRow key={lead.id}>
+                  <TableRow key={lead.id} className="hover:bg-accent/50 transition-colors">
                     <TableCell>
                       <div>
                         <p className="font-medium text-sm">{lead.name}</p>
@@ -132,9 +141,7 @@ export default function DashboardPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary" className={statusColors[lead.status]}>
-                        {lead.status}
-                      </Badge>
+                      <Badge variant="secondary" className={statusColors[lead.status]}>{lead.status}</Badge>
                     </TableCell>
                     <TableCell>{lead.visits}</TableCell>
                     <TableCell>{lead.events}</TableCell>

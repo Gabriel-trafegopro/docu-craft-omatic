@@ -12,7 +12,10 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 
-const tooltipStyle = { backgroundColor: "hsl(217, 33%, 17%)", border: "1px solid hsl(217, 33%, 22%)", borderRadius: 8, color: "hsl(210, 40%, 98%)" };
+const tooltipStyle = {
+  backgroundColor: "hsl(220, 40%, 8%)", border: "1px solid hsl(220, 30%, 18%)",
+  borderRadius: 10, color: "hsl(210, 40%, 98%)", boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+};
 
 const eventBadgeColors: Record<string, string> = {
   page_view: "bg-primary/20 text-primary",
@@ -42,7 +45,7 @@ export default function EventsPage() {
         </div>
 
         <div className="grid gap-4 lg:grid-cols-2">
-          <Card>
+          <Card className="card-glow">
             <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Por Tipo de Evento</CardTitle></CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={260}>
@@ -56,14 +59,14 @@ export default function EventsPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="card-glow">
             <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Eventos ao Longo do Tempo</CardTitle></CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={260}>
                 <LineChart data={mockEventsTimeline}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(217, 33%, 22%)" />
-                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(215, 20%, 65%)" }} />
-                  <YAxis tick={{ fontSize: 10, fill: "hsl(215, 20%, 65%)" }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 30%, 14%)" />
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(215, 20%, 45%)" }} />
+                  <YAxis tick={{ fontSize: 10, fill: "hsl(215, 20%, 45%)" }} />
                   <Tooltip contentStyle={tooltipStyle} />
                   <Line type="monotone" dataKey="eventos" stroke="hsl(142, 71%, 45%)" strokeWidth={2} dot={false} />
                 </LineChart>
@@ -72,7 +75,7 @@ export default function EventsPage() {
           </Card>
         </div>
 
-        <Card>
+        <Card className="card-glow">
           <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Eventos Recentes</CardTitle></CardHeader>
           <CardContent className="p-0">
             <Table>
@@ -86,7 +89,7 @@ export default function EventsPage() {
               </TableHeader>
               <TableBody>
                 {mockRecentEvents.map((evt) => (
-                  <TableRow key={evt.id}>
+                  <TableRow key={evt.id} className="hover:bg-accent/50 transition-colors">
                     <TableCell>
                       <Badge variant="secondary" className={eventBadgeColors[evt.type] || ""}>{evt.type}</Badge>
                     </TableCell>

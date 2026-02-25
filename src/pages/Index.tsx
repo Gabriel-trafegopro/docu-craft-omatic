@@ -1,12 +1,11 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { KPICard } from "@/components/KPICard";
 import { FunnelChart } from "@/components/FunnelChart";
-import {
-  mockKPIs, mockFunnelConversion, mockFunnelSales,
-  mockVisitsEvents30d, mockUtmSources, mockLeads,
-} from "@/data/mockData";
+import { useCompany } from "@/hooks/useCompany";
+import { useDashboardKPIs, useFunnel, useVisitsTimeline, useUtmAnalysis, useLeads } from "@/hooks/useSupabaseData";
 import { Users, Eye, Zap, UserCheck, Activity, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar,
@@ -17,10 +16,16 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 const statusColors: Record<string, string> = {
-  lead: "bg-primary/20 text-primary",
   cliente: "bg-success/20 text-success",
   identificado: "bg-warning/20 text-warning",
+  anonimo: "bg-muted text-muted-foreground",
 };
+
+function getStatus(lead: { is_customer?: boolean | null; is_identified?: boolean | null }) {
+  if (lead.is_customer) return "cliente";
+  if (lead.is_identified) return "identificado";
+  return "anonimo";
+}
 
 const tooltipStyle = {
   backgroundColor: "hsl(220, 40%, 8%)",
@@ -31,6 +36,30 @@ const tooltipStyle = {
 };
 
 export default function DashboardPage() {
+  const { companyId } = useCompany();
+  const { data: kpis, isLoading: kpisLoading } = useDashboardKPIs(companyId);
+  const { data: funnel, isLoading: funnelLoading } = useFunnel(companyId);
+  const { data: timeline, isLoading: timelineLoading } = useVisitsTimeline(companyId);
+  const { data: utmData } = useUtmAnalysis(companyId);
+  const { data: leads } = useLeads(companyId);
+
+  const conversionRate = kpis && kpis.leads > 0 ? ((kpis.customers / kpis.leads) * 100).toFixed(1) + "%" : "0%";
+
+  const funnelConversion = funnel ? [
+    { stage: "Visitantes", value: Number(funnel.total_visitors) || 0, color: "hsl(25, 95%, 53%)" },
+    { stage: "Leads", value: Number(funnel.total_leads) || 0, color: "hsl(217, 91%, 60%)" },
+    { stage: "Engajados", value: Number(funnel.total_engaged) || 0, color: "hsl(142, 71%, 45%)" },
+    { stage: "Interessados", value: Number(funnel.total_interested) || 0, color: "hsl(38, 92%, 50%)" },
+    { stage: "Clientes", value: Number(funnel.total_customers) || 0, color: "hsl(280, 65%, 60%)" },
+  ] : [];
+
+  const utmTop5 = (utmData || []).slice(0, 5).map((u) => ({
+    source: u.utm_source || "(direto)",
+    leads: Number(u.unique_leads) || 0,
+  }));
+
+  const recentLeads = (leads || []).slice(0, 10);
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -47,33 +76,32 @@ export default function DashboardPage() {
 
         {/* KPI Cards */}
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <KPICard title="Leads" value={mockKPIs.leads.value} change={mockKPIs.leads.change} icon={<Users className="h-5 w-5" />} />
-          <KPICard title="Visitas" value={mockKPIs.visits.value} change={mockKPIs.visits.change} icon={<Eye className="h-5 w-5" />} />
-          <KPICard title="Eventos" value={mockKPIs.events.value} change={mockKPIs.events.change} icon={<Zap className="h-5 w-5" />} />
-          <KPICard title="Clientes" value={mockKPIs.customers.value} change={mockKPIs.customers.change} icon={<UserCheck className="h-5 w-5" />} />
+          {kpisLoading ? (
+            Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          ) : (
+            <>
+              <KPICard title="Leads" value={kpis?.leads || 0} icon={<Users className="h-5 w-5" />} />
+              <KPICard title="Visitas" value={kpis?.visits || 0} icon={<Eye className="h-5 w-5" />} />
+              <KPICard title="Eventos" value={kpis?.events || 0} icon={<Zap className="h-5 w-5" />} />
+              <KPICard title="Clientes" value={kpis?.customers || 0} icon={<UserCheck className="h-5 w-5" />} />
+            </>
+          )}
         </div>
 
         <div className="grid grid-cols-3 gap-4">
-          <KPICard title="Taxa de Conversão" value="1.9%" change={2.1} icon={<Activity className="h-5 w-5" />} compact />
-          <KPICard title="Ativos 7 dias" value={mockKPIs.active7d.value} icon={<Activity className="h-5 w-5" />} compact />
-          <KPICard title="Ativos 24h" value={mockKPIs.active24h.value} icon={<Clock className="h-5 w-5" />} compact />
+          <KPICard title="Taxa de Conversão" value={conversionRate} icon={<Activity className="h-5 w-5" />} compact />
+          <KPICard title="Total Leads" value={kpis?.leads || 0} icon={<Activity className="h-5 w-5" />} compact />
+          <KPICard title="Total Visitas" value={kpis?.visits || 0} icon={<Clock className="h-5 w-5" />} compact />
         </div>
 
         {/* Funnels */}
-        <div className="grid gap-4 lg:grid-cols-2">
-          <FunnelChart
-            title="Funil de Conversão"
-            subtitle="Pageviews → Clicks → Checkout → Compras"
-            data={mockFunnelConversion}
-            variant="3d"
-          />
-          <FunnelChart
-            title="Funil de Vendas"
-            subtitle="Clique para ver os leads"
-            data={mockFunnelSales}
-            variant="bars"
-          />
-        </div>
+        {funnelConversion.length > 0 && (
+          <div className="grid gap-4 lg:grid-cols-2">
+            <FunnelChart title="Funil de Conversão" subtitle="Visitantes → Leads → Engajados → Interessados → Clientes" data={funnelConversion} variant="3d" />
+            <FunnelChart title="Funil de Vendas" subtitle="Visualização em barras" data={funnelConversion} variant="bars" />
+          </div>
+        )}
+        {funnelLoading && <Skeleton className="h-80 rounded-xl" />}
 
         {/* Charts */}
         <div className="grid gap-4 lg:grid-cols-2">
@@ -82,16 +110,18 @@ export default function DashboardPage() {
               <CardTitle className="text-sm font-semibold">Visitas e Eventos (últimos 30 dias)</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={260}>
-                <LineChart data={mockVisitsEvents30d}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 30%, 14%)" />
-                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(215, 20%, 45%)" }} />
-                  <YAxis tick={{ fontSize: 10, fill: "hsl(215, 20%, 45%)" }} />
-                  <Tooltip contentStyle={tooltipStyle} />
-                  <Line type="monotone" dataKey="visitas" stroke="hsl(25, 95%, 53%)" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="eventos" stroke="hsl(142, 71%, 45%)" strokeWidth={2} dot={false} />
-                </LineChart>
-              </ResponsiveContainer>
+              {timelineLoading ? <Skeleton className="h-[260px]" /> : (
+                <ResponsiveContainer width="100%" height={260}>
+                  <LineChart data={timeline || []}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 30%, 14%)" />
+                    <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(215, 20%, 45%)" }} />
+                    <YAxis tick={{ fontSize: 10, fill: "hsl(215, 20%, 45%)" }} />
+                    <Tooltip contentStyle={tooltipStyle} />
+                    <Line type="monotone" dataKey="visitas" stroke="hsl(25, 95%, 53%)" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="eventos" stroke="hsl(142, 71%, 45%)" strokeWidth={2} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
             </CardContent>
           </Card>
 
@@ -101,7 +131,7 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={260}>
-                <BarChart data={mockUtmSources.slice(0, 5)} layout="vertical">
+                <BarChart data={utmTop5} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 30%, 14%)" />
                   <XAxis type="number" tick={{ fontSize: 10, fill: "hsl(215, 20%, 45%)" }} />
                   <YAxis dataKey="source" type="category" tick={{ fontSize: 10, fill: "hsl(215, 20%, 45%)" }} width={70} />
@@ -132,26 +162,32 @@ export default function DashboardPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockLeads.slice(0, 10).map((lead) => (
-                  <TableRow key={lead.id} className="hover:bg-accent/50 transition-colors">
-                    <TableCell>
-                      <div>
-                        <p className="font-medium text-sm">{lead.name}</p>
-                        <p className="text-xs text-muted-foreground">{lead.email}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className={statusColors[lead.status]}>{lead.status}</Badge>
-                    </TableCell>
-                    <TableCell>{lead.visits}</TableCell>
-                    <TableCell>{lead.events}</TableCell>
-                    <TableCell>{lead.source}</TableCell>
-                    <TableCell className="text-xs">{lead.location}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {new Date(lead.lastVisit).toLocaleDateString("pt-BR")}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {recentLeads.map((lead) => {
+                  const status = getStatus(lead);
+                  return (
+                    <TableRow key={lead.id} className="hover:bg-accent/50 transition-colors">
+                      <TableCell>
+                        <div>
+                          <p className="font-medium text-sm">{lead.name || lead.external_user_id}</p>
+                          <p className="text-xs text-muted-foreground">{lead.email || "-"}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className={statusColors[status]}>{status}</Badge>
+                      </TableCell>
+                      <TableCell>{lead.total_visits || 0}</TableCell>
+                      <TableCell>{lead.total_events || 0}</TableCell>
+                      <TableCell>{lead.first_utm_source || "(direto)"}</TableCell>
+                      <TableCell className="text-xs">{[lead.last_city, lead.last_country].filter(Boolean).join(", ") || "-"}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {lead.last_visit_at ? new Date(lead.last_visit_at).toLocaleDateString("pt-BR") : "-"}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {recentLeads.length === 0 && (
+                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Nenhum lead encontrado. Verifique se está autenticado.</TableCell></TableRow>
+                )}
               </TableBody>
             </Table>
           </CardContent>

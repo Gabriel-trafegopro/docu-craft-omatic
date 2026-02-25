@@ -37,13 +37,13 @@ export function AppSidebar() {
 
       {/* Company Selector */}
       <div className="px-4 pb-4">
-        <Select value={companyId} onValueChange={setCompanyId}>
+        <Select value={companyId?.toString() || ""} onValueChange={(v) => setCompanyId(Number(v))}>
           <SelectTrigger className="h-9 w-full border-sidebar-border bg-sidebar-accent text-xs text-sidebar-foreground">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {companies.map((c) => (
-              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>

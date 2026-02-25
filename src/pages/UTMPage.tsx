@@ -1,6 +1,8 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { mockUtmSources } from "@/data/mockData";
+import { useCompany } from "@/hooks/useCompany";
+import { useUtmAnalysis } from "@/hooks/useSupabaseData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
@@ -21,6 +23,17 @@ const tooltipStyle = {
 };
 
 export default function UTMPage() {
+  const { companyId } = useCompany();
+  const { data: utmData, isLoading } = useUtmAnalysis(companyId);
+
+  const chartData = (utmData || []).slice(0, 10).map((u) => ({
+    source: u.utm_source || "(direto)",
+    leads: Number(u.unique_leads) || 0,
+    visits: Number(u.total_visits) || 0,
+  }));
+
+  const totalLeads = chartData.reduce((sum, x) => sum + x.leads, 0);
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -29,42 +42,46 @@ export default function UTMPage() {
           <p className="text-sm text-muted-foreground">Performance por fonte de tráfego e campanha</p>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Card className="card-glow">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold">Visitas por Origem (UTM Source)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={mockUtmSources} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 30%, 14%)" />
-                  <XAxis type="number" tick={{ fontSize: 10, fill: "hsl(215, 20%, 45%)" }} />
-                  <YAxis dataKey="source" type="category" tick={{ fontSize: 10, fill: "hsl(215, 20%, 45%)" }} width={70} />
-                  <Tooltip contentStyle={tooltipStyle} />
-                  <Bar dataKey="leads" radius={[0, 4, 4, 0]}>
-                    {mockUtmSources.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+        {isLoading ? (
+          <div className="grid gap-4 lg:grid-cols-2">{Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-80 rounded-xl" />)}</div>
+        ) : (
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Card className="card-glow">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold">Visitas por Origem (UTM Source)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={chartData} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 30%, 14%)" />
+                    <XAxis type="number" tick={{ fontSize: 10, fill: "hsl(215, 20%, 45%)" }} />
+                    <YAxis dataKey="source" type="category" tick={{ fontSize: 10, fill: "hsl(215, 20%, 45%)" }} width={70} />
+                    <Tooltip contentStyle={tooltipStyle} />
+                    <Bar dataKey="visits" radius={[0, 4, 4, 0]}>
+                      {chartData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
 
-          <Card className="card-glow">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold">Distribuição de Visitas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie data={mockUtmSources} dataKey="leads" nameKey="source" cx="50%" cy="50%" outerRadius={100} label={({ source, percent }) => `${source}: ${(percent * 100).toFixed(0)}%`} labelLine={true} fontSize={10}>
-                    {mockUtmSources.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                  </Pie>
-                  <Tooltip contentStyle={tooltipStyle} />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </div>
+            <Card className="card-glow">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold">Distribuição de Leads</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie data={chartData} dataKey="leads" nameKey="source" cx="50%" cy="50%" outerRadius={100} label={({ source, percent }) => `${source}: ${(percent * 100).toFixed(0)}%`} labelLine={true} fontSize={10}>
+                      {chartData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                    </Pie>
+                    <Tooltip contentStyle={tooltipStyle} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         <Card className="card-glow">
           <CardHeader className="pb-2">
@@ -74,33 +91,35 @@ export default function UTMPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Origem (UTM Source)</TableHead>
+                  <TableHead>Origem</TableHead>
+                  <TableHead>Medium</TableHead>
+                  <TableHead>Campanha</TableHead>
                   <TableHead>Visitas</TableHead>
                   <TableHead>Leads</TableHead>
                   <TableHead>Clientes</TableHead>
-                  <TableHead>Taxa de Conversão</TableHead>
-                  <TableHead>% do Total</TableHead>
+                  <TableHead>Conversão</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockUtmSources.map((s, i) => {
-                  const totalLeads = mockUtmSources.reduce((sum, x) => sum + x.leads, 0);
-                  return (
-                    <TableRow key={s.source} className="hover:bg-accent/50 transition-colors">
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                          <span className="font-medium">{s.source}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{s.visits.toLocaleString("pt-BR")}</TableCell>
-                      <TableCell>{s.leads.toLocaleString("pt-BR")}</TableCell>
-                      <TableCell>0</TableCell>
-                      <TableCell>{s.conversion}%</TableCell>
-                      <TableCell>{((s.leads / totalLeads) * 100).toFixed(1)}%</TableCell>
-                    </TableRow>
-                  );
-                })}
+                {(utmData || []).map((s, i) => (
+                  <TableRow key={i} className="hover:bg-accent/50 transition-colors">
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                        <span className="font-medium">{s.utm_source || "(direto)"}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs">{s.utm_medium || "-"}</TableCell>
+                    <TableCell className="text-xs">{s.utm_campaign || "-"}</TableCell>
+                    <TableCell>{Number(s.total_visits || 0).toLocaleString("pt-BR")}</TableCell>
+                    <TableCell>{Number(s.unique_leads || 0).toLocaleString("pt-BR")}</TableCell>
+                    <TableCell>{Number(s.total_customers || 0).toLocaleString("pt-BR")}</TableCell>
+                    <TableCell>{s.conversion_rate ?? 0}%</TableCell>
+                  </TableRow>
+                ))}
+                {(!utmData || utmData.length === 0) && (
+                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Sem dados UTM disponíveis.</TableCell></TableRow>
+                )}
               </TableBody>
             </Table>
           </CardContent>

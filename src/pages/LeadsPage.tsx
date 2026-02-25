@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { mockLeads } from "@/data/mockData";
+import { useCompany } from "@/hooks/useCompany";
+import { useLeads } from "@/hooks/useSupabaseData";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -15,22 +17,32 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
 const statusColors: Record<string, string> = {
-  lead: "bg-primary/20 text-primary",
   cliente: "bg-success/20 text-success",
   identificado: "bg-warning/20 text-warning",
+  anonimo: "bg-muted text-muted-foreground",
 };
+
+function getStatus(lead: { is_customer?: boolean | null; is_identified?: boolean | null }) {
+  if (lead.is_customer) return "cliente";
+  if (lead.is_identified) return "identificado";
+  return "anonimo";
+}
 
 const PAGE_SIZE = 20;
 
 export default function LeadsPage() {
+  const { companyId } = useCompany();
+  const { data: leads, isLoading } = useLeads(companyId);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(0);
   const navigate = useNavigate();
 
-  const filtered = mockLeads.filter((l) => {
-    const matchSearch = !search || l.name.toLowerCase().includes(search.toLowerCase()) || l.email.toLowerCase().includes(search.toLowerCase()) || l.id.includes(search);
-    const matchStatus = statusFilter === "all" || l.status === statusFilter;
+  const filtered = (leads || []).filter((l) => {
+    const s = search.toLowerCase();
+    const matchSearch = !search || (l.name || "").toLowerCase().includes(s) || (l.email || "").toLowerCase().includes(s) || (l.external_user_id || "").toLowerCase().includes(s);
+    const status = getStatus(l);
+    const matchStatus = statusFilter === "all" || status === statusFilter;
     return matchSearch && matchStatus;
   });
 
@@ -62,77 +74,75 @@ export default function LeadsPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="lead">Lead</SelectItem>
               <SelectItem value="cliente">Cliente</SelectItem>
               <SelectItem value="identificado">Identificado</SelectItem>
+              <SelectItem value="anonimo">Anônimo</SelectItem>
             </SelectContent>
           </Select>
-          <Select defaultValue="20">
-            <SelectTrigger className="w-32 bg-card border-border">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="20">20 por pág.</SelectItem>
-              <SelectItem value="50">50 por pág.</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button variant="outline" size="sm" className="gap-1.5 border-border">
-            <Download className="h-3.5 w-3.5" /> Exportar
-          </Button>
         </div>
 
         <Card className="card-glow">
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Lead</TableHead>
-                  <TableHead>Contato</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Visitas</TableHead>
-                  <TableHead>Eventos</TableHead>
-                  <TableHead>Localização</TableHead>
-                  <TableHead>Origem</TableHead>
-                  <TableHead>Última Visita</TableHead>
-                  <TableHead></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paged.map((lead) => (
-                  <TableRow key={lead.id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/leads/${lead.id}`)}>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium text-sm">{lead.name}</p>
-                        <p className="text-[11px] text-muted-foreground font-mono">{lead.id}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">-</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className={statusColors[lead.status]}>{lead.status}</Badge>
-                    </TableCell>
-                    <TableCell className="font-semibold">{lead.visits}</TableCell>
-                    <TableCell className="font-semibold">{lead.events}</TableCell>
-                    <TableCell>
-                      <div className="text-xs">
-                        <p>{lead.city.toLowerCase()}</p>
-                        <p className="text-muted-foreground">{lead.state.toLowerCase()}, br</p>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-xs">{lead.source}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{new Date(lead.lastVisit).toLocaleDateString("pt-BR")}</TableCell>
-                    <TableCell>
-                      <Eye className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors" />
-                    </TableCell>
+            {isLoading ? (
+              <div className="p-6 space-y-3">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Lead</TableHead>
+                    <TableHead>Contato</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Visitas</TableHead>
+                    <TableHead>Eventos</TableHead>
+                    <TableHead>Localização</TableHead>
+                    <TableHead>Origem</TableHead>
+                    <TableHead>Última Visita</TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {paged.map((lead) => {
+                    const status = getStatus(lead);
+                    return (
+                      <TableRow key={lead.id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/leads/${lead.id}`)}>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium text-sm">{lead.name || lead.external_user_id}</p>
+                            <p className="text-[11px] text-muted-foreground font-mono">{lead.external_user_id}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{lead.email || "-"}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className={statusColors[status]}>{status}</Badge>
+                        </TableCell>
+                        <TableCell className="font-semibold">{lead.total_visits || 0}</TableCell>
+                        <TableCell className="font-semibold">{lead.total_events || 0}</TableCell>
+                        <TableCell>
+                          <div className="text-xs">
+                            <p>{lead.last_city || "-"}</p>
+                            <p className="text-muted-foreground">{[lead.last_country].filter(Boolean).join(", ")}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-xs">{lead.first_utm_source || "(direto)"}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{lead.last_visit_at ? new Date(lead.last_visit_at).toLocaleDateString("pt-BR") : "-"}</TableCell>
+                        <TableCell>
+                          <Eye className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors" />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                  {paged.length === 0 && (
+                    <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">Nenhum lead encontrado.</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
 
         {totalPages > 1 && (
           <div className="flex items-center justify-center gap-2">
-            {Array.from({ length: totalPages }, (_, i) => (
+            {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => (
               <button key={i} onClick={() => setPage(i)} className={`h-8 w-8 rounded-lg text-sm font-medium transition-colors ${page === i ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"}`}>
                 {i + 1}
               </button>

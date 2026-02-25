@@ -1,22 +1,38 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { mockLeads } from "@/data/mockData";
+import { useLeadDetail } from "@/hooks/useSupabaseData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Eye, Zap, Globe, Calendar } from "lucide-react";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
+import { ArrowLeft, Eye, Zap, Globe, Calendar, MapPin, Hash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const statusColors: Record<string, string> = {
-  lead: "bg-primary/20 text-primary",
   cliente: "bg-success/20 text-success",
   identificado: "bg-warning/20 text-warning",
+  anonimo: "bg-muted text-muted-foreground",
 };
+
+function getStatus(lead: { is_customer?: boolean | null; is_identified?: boolean | null }) {
+  if (lead.is_customer) return "cliente";
+  if (lead.is_identified) return "identificado";
+  return "anonimo";
+}
 
 export default function LeadDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const lead = mockLeads.find((l) => l.id === id);
+  const leadId = id ? Number(id) : null;
+  const { lead: leadQuery, visits: visitsQuery, events: eventsQuery } = useLeadDetail(leadId);
+  const lead = leadQuery.data;
+
+  if (leadQuery.isLoading) {
+    return <DashboardLayout><div className="space-y-4 p-6">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}</div></DashboardLayout>;
+  }
 
   if (!lead) {
     return (
@@ -29,12 +45,15 @@ export default function LeadDetailPage() {
     );
   }
 
-  const mockTimeline = [
-    { date: lead.lastVisit, type: "visit", desc: `Visitou /pricing` },
-    { date: new Date(new Date(lead.lastVisit).getTime() - 3600000).toISOString(), type: "event", desc: "Clicou em 'Ver planos'" },
-    { date: new Date(new Date(lead.lastVisit).getTime() - 7200000).toISOString(), type: "visit", desc: "Visitou /home" },
-    { date: lead.createdAt, type: "created", desc: "Lead criado" },
-  ];
+  const status = getStatus(lead);
+  const visits = visitsQuery.data || [];
+  const events = eventsQuery.data || [];
+
+  // Build timeline from visits + events
+  const timeline = [
+    ...visits.map((v) => ({ date: v.visit_datetime, type: "visit" as const, desc: `Visitou ${v.page_title || v.page_url || v.page_path || "/"}`, detail: [v.city, v.country].filter(Boolean).join(", ") })),
+    ...events.map((e) => ({ date: e.event_datetime, type: "event" as const, desc: `${e.event_type}: ${e.event_name || e.element_text || "-"}`, detail: e.page_url || "" })),
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 50);
 
   return (
     <DashboardLayout>
@@ -43,59 +62,123 @@ export default function LeadDetailPage() {
           <ArrowLeft className="h-4 w-4" /> Voltar para Leads
         </Button>
 
-        {/* Header */}
         <div className="flex items-start gap-4">
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/20 text-xl font-bold text-primary">
-            {lead.name.charAt(0)}
+            {(lead.name || lead.external_user_id || "?").charAt(0).toUpperCase()}
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold">{lead.name}</h1>
-              <Badge variant="secondary" className={statusColors[lead.status]}>{lead.status}</Badge>
+              <h1 className="text-2xl font-bold">{lead.name || lead.external_user_id}</h1>
+              <Badge variant="secondary" className={statusColors[status]}>{status}</Badge>
             </div>
-            <p className="text-sm text-muted-foreground">{lead.email}</p>
-            <p className="text-xs text-muted-foreground">{lead.location}, {lead.country}</p>
+            <p className="text-sm text-muted-foreground">{lead.email || "-"}</p>
+            {lead.whatsapp && <p className="text-xs text-muted-foreground">WhatsApp: {lead.whatsapp}</p>}
+            <p className="text-xs text-muted-foreground">{[lead.last_city, lead.last_country].filter(Boolean).join(", ") || "-"}</p>
           </div>
         </div>
 
         <div className="grid gap-4 lg:grid-cols-4">
-          <Card><CardContent className="flex items-center gap-3 p-4"><Eye className="h-4 w-4 text-primary" /><div><p className="text-xs text-muted-foreground">Visitas</p><p className="text-lg font-bold">{lead.visits}</p></div></CardContent></Card>
-          <Card><CardContent className="flex items-center gap-3 p-4"><Zap className="h-4 w-4 text-success" /><div><p className="text-xs text-muted-foreground">Eventos</p><p className="text-lg font-bold">{lead.events}</p></div></CardContent></Card>
-          <Card><CardContent className="flex items-center gap-3 p-4"><Globe className="h-4 w-4 text-warning" /><div><p className="text-xs text-muted-foreground">Origem</p><p className="text-lg font-bold">{lead.source}</p></div></CardContent></Card>
-          <Card><CardContent className="flex items-center gap-3 p-4"><Calendar className="h-4 w-4 text-muted-foreground" /><div><p className="text-xs text-muted-foreground">Primeiro acesso</p><p className="text-sm font-medium">{new Date(lead.createdAt).toLocaleDateString("pt-BR")}</p></div></CardContent></Card>
+          <Card><CardContent className="flex items-center gap-3 p-4"><Eye className="h-4 w-4 text-primary" /><div><p className="text-xs text-muted-foreground">Visitas</p><p className="text-lg font-bold">{lead.total_visits || 0}</p></div></CardContent></Card>
+          <Card><CardContent className="flex items-center gap-3 p-4"><Zap className="h-4 w-4 text-success" /><div><p className="text-xs text-muted-foreground">Eventos</p><p className="text-lg font-bold">{lead.total_events || 0}</p></div></CardContent></Card>
+          <Card><CardContent className="flex items-center gap-3 p-4"><Globe className="h-4 w-4 text-warning" /><div><p className="text-xs text-muted-foreground">UTM Sources</p><p className="text-lg font-bold">{lead.utm_sources_count || 0}</p></div></CardContent></Card>
+          <Card><CardContent className="flex items-center gap-3 p-4"><MapPin className="h-4 w-4 text-chart-4" /><div><p className="text-xs text-muted-foreground">Cidades</p><p className="text-lg font-bold">{lead.cities_visited || 0}</p></div></CardContent></Card>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-3">
+          <Card><CardContent className="flex items-center gap-3 p-4"><Hash className="h-4 w-4 text-muted-foreground" /><div><p className="text-xs text-muted-foreground">Páginas visitadas</p><p className="text-lg font-bold">{lead.pages_visited || 0}</p></div></CardContent></Card>
+          <Card><CardContent className="flex items-center gap-3 p-4"><Calendar className="h-4 w-4 text-muted-foreground" /><div><p className="text-xs text-muted-foreground">Primeiro acesso</p><p className="text-sm font-medium">{lead.first_visit_at ? new Date(lead.first_visit_at).toLocaleDateString("pt-BR") : "-"}</p></div></CardContent></Card>
+          <Card><CardContent className="flex items-center gap-3 p-4"><Calendar className="h-4 w-4 text-primary" /><div><p className="text-xs text-muted-foreground">Último acesso</p><p className="text-sm font-medium">{lead.last_visit_at ? new Date(lead.last_visit_at).toLocaleDateString("pt-BR") : "-"}</p></div></CardContent></Card>
         </div>
 
         <Tabs defaultValue="timeline">
           <TabsList>
             <TabsTrigger value="timeline">Timeline</TabsTrigger>
-            <TabsTrigger value="visits">Visitas</TabsTrigger>
-            <TabsTrigger value="events">Eventos</TabsTrigger>
+            <TabsTrigger value="visits">Visitas ({visits.length})</TabsTrigger>
+            <TabsTrigger value="events">Eventos ({events.length})</TabsTrigger>
           </TabsList>
+
           <TabsContent value="timeline" className="mt-4">
             <Card>
               <CardContent className="p-6">
-                <div className="space-y-4">
-                  {mockTimeline.map((item, i) => (
-                    <div key={i} className="flex gap-4">
-                      <div className="flex flex-col items-center">
-                        <div className={`h-3 w-3 rounded-full ${item.type === "event" ? "bg-success" : item.type === "created" ? "bg-warning" : "bg-primary"}`} />
-                        {i < mockTimeline.length - 1 && <div className="w-px flex-1 bg-border" />}
+                {timeline.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">Nenhuma atividade registrada.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {timeline.map((item, i) => (
+                      <div key={i} className="flex gap-4">
+                        <div className="flex flex-col items-center">
+                          <div className={`h-3 w-3 rounded-full ${item.type === "event" ? "bg-success" : "bg-primary"}`} />
+                          {i < timeline.length - 1 && <div className="w-px flex-1 bg-border" />}
+                        </div>
+                        <div className="pb-4">
+                          <p className="text-sm font-medium">{item.desc}</p>
+                          {item.detail && <p className="text-xs text-muted-foreground">{item.detail}</p>}
+                          <p className="text-xs text-muted-foreground">{new Date(item.date).toLocaleString("pt-BR")}</p>
+                        </div>
                       </div>
-                      <div className="pb-4">
-                        <p className="text-sm font-medium">{item.desc}</p>
-                        <p className="text-xs text-muted-foreground">{new Date(item.date).toLocaleString("pt-BR")}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
+
           <TabsContent value="visits" className="mt-4">
-            <Card><CardContent className="p-6 text-sm text-muted-foreground">Detalhes de visitas serão carregados com Supabase.</CardContent></Card>
+            <Card>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Página</TableHead>
+                      <TableHead>Título</TableHead>
+                      <TableHead>UTM Source</TableHead>
+                      <TableHead>Cidade</TableHead>
+                      <TableHead>Data</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {visits.map((v) => (
+                      <TableRow key={v.id} className="hover:bg-accent/50">
+                        <TableCell className="text-xs font-mono max-w-[200px] truncate">{v.page_url || v.page_path}</TableCell>
+                        <TableCell className="text-xs">{v.page_title || "-"}</TableCell>
+                        <TableCell className="text-xs">{v.utm_source || "-"}</TableCell>
+                        <TableCell className="text-xs">{[v.city, v.country].filter(Boolean).join(", ") || "-"}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{new Date(v.visit_datetime).toLocaleString("pt-BR")}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
           </TabsContent>
+
           <TabsContent value="events" className="mt-4">
-            <Card><CardContent className="p-6 text-sm text-muted-foreground">Detalhes de eventos serão carregados com Supabase.</CardContent></Card>
+            <Card>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Página</TableHead>
+                      <TableHead>Elemento</TableHead>
+                      <TableHead>Data</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {events.map((e) => (
+                      <TableRow key={e.id} className="hover:bg-accent/50">
+                        <TableCell><Badge variant="secondary">{e.event_type}</Badge></TableCell>
+                        <TableCell className="text-xs">{e.event_name || "-"}</TableCell>
+                        <TableCell className="text-xs font-mono max-w-[200px] truncate">{e.page_url || "-"}</TableCell>
+                        <TableCell className="text-xs">{e.element_text || "-"}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{new Date(e.event_datetime).toLocaleString("pt-BR")}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

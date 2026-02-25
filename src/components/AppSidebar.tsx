@@ -1,8 +1,9 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard, Users, Filter, Share2, Globe, Zap, Clock,
+  LayoutDashboard, Users, Filter, Share2, Globe, Zap, Clock, LogOut,
 } from "lucide-react";
 import { useCompany } from "@/hooks/useCompany";
+import { useAuth } from "@/hooks/useAuth";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -21,6 +22,13 @@ const navItems = [
 export function AppSidebar() {
   const location = useLocation();
   const { companyId, setCompanyId, companies } = useCompany();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/auth");
+  };
 
   return (
     <aside className="fixed left-0 top-0 z-40 flex h-screen w-[220px] flex-col border-r border-sidebar-border bg-sidebar">
@@ -73,11 +81,17 @@ export function AppSidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="border-t border-sidebar-border px-4 py-3">
-        <div className="flex items-center gap-2 text-[11px] text-sidebar-foreground">
-          <span className="h-2 w-2 rounded-full bg-success animate-pulse-dot" />
-          Dados atualizados em tempo real
-        </div>
+      <div className="border-t border-sidebar-border px-4 py-3 space-y-2">
+        {user?.email && (
+          <p className="truncate text-[11px] text-muted-foreground">{user.email}</p>
+        )}
+        <button
+          onClick={handleLogout}
+          className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-xs text-sidebar-foreground hover:bg-sidebar-accent hover:text-destructive transition-colors"
+        >
+          <LogOut className="h-3.5 w-3.5" />
+          Sair
+        </button>
       </div>
     </aside>
   );

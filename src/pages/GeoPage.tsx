@@ -8,7 +8,10 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 
-const tooltipStyle = { backgroundColor: "hsl(217, 33%, 17%)", border: "1px solid hsl(217, 33%, 22%)", borderRadius: 8, color: "hsl(210, 40%, 98%)" };
+const tooltipStyle = {
+  backgroundColor: "hsl(220, 40%, 8%)", border: "1px solid hsl(220, 30%, 18%)",
+  borderRadius: 10, color: "hsl(210, 40%, 98%)", boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+};
 
 export default function GeoPage() {
   return (
@@ -20,29 +23,29 @@ export default function GeoPage() {
         </div>
 
         <div className="grid gap-4 lg:grid-cols-2">
-          <Card>
+          <Card className="card-glow">
             <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Top Países</CardTitle></CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={mockGeoData.countries}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(217, 33%, 22%)" />
-                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: "hsl(215, 20%, 65%)" }} />
-                  <YAxis tick={{ fontSize: 10, fill: "hsl(215, 20%, 65%)" }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 30%, 14%)" />
+                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: "hsl(215, 20%, 45%)" }} />
+                  <YAxis tick={{ fontSize: 10, fill: "hsl(215, 20%, 45%)" }} />
                   <Tooltip contentStyle={tooltipStyle} />
-                  <Bar dataKey="leads" fill="hsl(217, 91%, 60%)" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="leads" fill="hsl(25, 95%, 53%)" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="card-glow">
             <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Top Estados</CardTitle></CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={mockGeoData.states.slice(0, 5)}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(217, 33%, 22%)" />
-                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: "hsl(215, 20%, 65%)" }} />
-                  <YAxis tick={{ fontSize: 10, fill: "hsl(215, 20%, 65%)" }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 30%, 14%)" />
+                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: "hsl(215, 20%, 45%)" }} />
+                  <YAxis tick={{ fontSize: 10, fill: "hsl(215, 20%, 45%)" }} />
                   <Tooltip contentStyle={tooltipStyle} />
                   <Bar dataKey="leads" fill="hsl(142, 71%, 45%)" radius={[4, 4, 0, 0]} />
                 </BarChart>
@@ -51,7 +54,7 @@ export default function GeoPage() {
           </Card>
         </div>
 
-        <Card>
+        <Card className="card-glow">
           <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Detalhamento por Estado</CardTitle></CardHeader>
           <CardContent className="p-0">
             <Table>
@@ -64,7 +67,7 @@ export default function GeoPage() {
               </TableHeader>
               <TableBody>
                 {mockGeoData.states.map((s) => (
-                  <TableRow key={s.name}>
+                  <TableRow key={s.name} className="hover:bg-accent/50 transition-colors">
                     <TableCell className="font-medium">{s.name}</TableCell>
                     <TableCell>{s.leads.toLocaleString("pt-BR")}</TableCell>
                     <TableCell>{s.visits.toLocaleString("pt-BR")}</TableCell>

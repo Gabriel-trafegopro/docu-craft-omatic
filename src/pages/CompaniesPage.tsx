@@ -80,10 +80,9 @@ export default function CompaniesPage() {
   });
 
   const mutation = useMutation({
-    mutationFn: async (payload: { method: string; body: Record<string, unknown> }) => {
+    mutationFn: async (payload: { action: string; body: Record<string, unknown> }) => {
       const { data, error } = await supabase.functions.invoke("manage-company", {
-        method: payload.method as "POST" | "PATCH",
-        body: payload.body,
+        body: { action: payload.action, ...payload.body },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -138,9 +137,9 @@ export default function CompaniesPage() {
       logo_url: result.data.logo_url || null,
     };
     if (editingCompany) {
-      mutation.mutate({ method: "PATCH", body: { id: editingCompany.id, ...clean } });
+      mutation.mutate({ action: "update", body: { id: editingCompany.id, ...clean } });
     } else {
-      mutation.mutate({ method: "POST", body: clean });
+      mutation.mutate({ action: "create", body: clean });
     }
   };
 

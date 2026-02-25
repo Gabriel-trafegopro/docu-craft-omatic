@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 Deno.serve(async (req) => {
@@ -21,23 +21,21 @@ Deno.serve(async (req) => {
       });
     }
 
-    const anonClient = createClient(
+    const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } =
-      await anonClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    if (userError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const userId = claimsData.claims.sub as string;
+    const userId = user.id;
 
     // Service role client for admin operations
     const supabaseAdmin = createClient(
@@ -46,8 +44,9 @@ Deno.serve(async (req) => {
     );
 
     const body = await req.json();
+    const action = body.action;
 
-    if (req.method === "POST") {
+    if (action === "create") {
       const { name, slug, primary_domain, plan, max_leads, max_visits, logo_url } = body;
 
       if (!name || !slug) {
@@ -93,7 +92,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (req.method === "PATCH") {
+    if (action === "update") {
       const { id, ...updates } = body;
 
       if (!id) {

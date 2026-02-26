@@ -19,6 +19,8 @@ const tooltipStyle = {
   backgroundColor: "hsl(220, 40%, 8%)", border: "1px solid hsl(220, 30%, 18%)",
   borderRadius: 10, color: "hsl(210, 40%, 98%)", boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
 };
+const tooltipItemStyle = { color: "hsl(210, 40%, 98%)" };
+const tooltipLabelStyle = { color: "hsl(210, 40%, 98%)" };
 
 const PIE_COLORS = [
   "hsl(25, 95%, 53%)", "hsl(142, 71%, 45%)", "hsl(217, 91%, 60%)",
@@ -86,7 +88,7 @@ export default function EventsPage() {
                     <Pie data={typeData} dataKey="count" nameKey="type" cx="50%" cy="50%" outerRadius={90} label={({ type, percent }) => `${type} ${(percent * 100).toFixed(0)}%`} labelLine={false} fontSize={9}>
                       {typeData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
                     </Pie>
-                    <Tooltip contentStyle={tooltipStyle} />
+                    <Tooltip contentStyle={tooltipStyle} itemStyle={tooltipItemStyle} labelStyle={tooltipLabelStyle} />
                   </PieChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -100,7 +102,7 @@ export default function EventsPage() {
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 30%, 14%)" />
                     <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(215, 20%, 45%)" }} />
                     <YAxis tick={{ fontSize: 10, fill: "hsl(215, 20%, 45%)" }} />
-                    <Tooltip contentStyle={tooltipStyle} />
+                    <Tooltip contentStyle={tooltipStyle} itemStyle={tooltipItemStyle} labelStyle={tooltipLabelStyle} />
                     <Line type="monotone" dataKey="eventos" stroke="hsl(142, 71%, 45%)" strokeWidth={2} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>

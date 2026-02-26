@@ -21,6 +21,8 @@ const tooltipStyle = {
   backgroundColor: "hsl(220, 40%, 8%)", border: "1px solid hsl(220, 30%, 18%)",
   borderRadius: 10, color: "hsl(210, 40%, 98%)", boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
 };
+const tooltipItemStyle = { color: "hsl(210, 40%, 98%)" };
+const tooltipLabelStyle = { color: "hsl(210, 40%, 98%)" };
 
 export default function UTMPage() {
   const { companyId } = useCompany();
@@ -56,7 +58,7 @@ export default function UTMPage() {
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 30%, 14%)" />
                     <XAxis type="number" tick={{ fontSize: 10, fill: "hsl(215, 20%, 45%)" }} />
                     <YAxis dataKey="source" type="category" tick={{ fontSize: 10, fill: "hsl(215, 20%, 45%)" }} width={70} />
-                    <Tooltip contentStyle={tooltipStyle} />
+                    <Tooltip contentStyle={tooltipStyle} itemStyle={tooltipItemStyle} labelStyle={tooltipLabelStyle} />
                     <Bar dataKey="visits" radius={[0, 4, 4, 0]}>
                       {chartData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                     </Bar>
@@ -75,7 +77,7 @@ export default function UTMPage() {
                     <Pie data={chartData} dataKey="leads" nameKey="source" cx="50%" cy="50%" outerRadius={100} label={({ source, percent }) => `${source}: ${(percent * 100).toFixed(0)}%`} labelLine={true} fontSize={10}>
                       {chartData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                     </Pie>
-                    <Tooltip contentStyle={tooltipStyle} />
+                    <Tooltip contentStyle={tooltipStyle} itemStyle={tooltipItemStyle} labelStyle={tooltipLabelStyle} />
                   </PieChart>
                 </ResponsiveContainer>
               </CardContent>

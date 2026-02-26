@@ -58,7 +58,7 @@ export default function UTMPage() {
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 30%, 14%)" />
                     <XAxis type="number" tick={{ fontSize: 10, fill: "hsl(215, 20%, 45%)" }} />
                     <YAxis dataKey="source" type="category" tick={{ fontSize: 10, fill: "hsl(215, 20%, 45%)" }} width={70} />
-                    <Tooltip contentStyle={tooltipStyle} itemStyle={tooltipItemStyle} labelStyle={tooltipLabelStyle} />
+                    <Tooltip contentStyle={tooltipStyle} itemStyle={tooltipItemStyle} labelStyle={tooltipLabelStyle} cursor={{ fill: "hsl(220, 30%, 14%, 0.5)" }} />
                     <Bar dataKey="visits" radius={[0, 4, 4, 0]}>
                       {chartData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                     </Bar>
@@ -74,7 +74,7 @@ export default function UTMPage() {
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
-                    <Pie data={chartData} dataKey="leads" nameKey="source" cx="50%" cy="50%" outerRadius={100} label={({ source, percent }) => `${source}: ${(percent * 100).toFixed(0)}%`} labelLine={true} fontSize={10}>
+                    <Pie data={chartData} dataKey="leads" nameKey="source" cx="50%" cy="50%" outerRadius={100} label={({ x, y, source, percent }) => <text x={x} y={y} fill="hsl(210, 40%, 98%)" fontSize={10} textAnchor="middle">{`${source}: ${(percent * 100).toFixed(0)}%`}</text>} labelLine={{ stroke: "hsl(215, 20%, 45%)" }} stroke="none">
                       {chartData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                     </Pie>
                     <Tooltip contentStyle={tooltipStyle} itemStyle={tooltipItemStyle} labelStyle={tooltipLabelStyle} />

@@ -85,7 +85,7 @@ export default function EventsPage() {
               <CardContent>
                 <ResponsiveContainer width="100%" height={260}>
                   <PieChart>
-                    <Pie data={typeData} dataKey="count" nameKey="type" cx="50%" cy="50%" outerRadius={90} label={({ type, percent }) => `${type} ${(percent * 100).toFixed(0)}%`} labelLine={false} fontSize={9}>
+                    <Pie data={typeData} dataKey="count" nameKey="type" cx="50%" cy="50%" outerRadius={90} label={({ x, y, type, percent }) => <text x={x} y={y} fill="hsl(210, 40%, 98%)" fontSize={9} textAnchor="middle">{`${type} ${(percent * 100).toFixed(0)}%`}</text>} labelLine={false} stroke="none">
                       {typeData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
                     </Pie>
                     <Tooltip contentStyle={tooltipStyle} itemStyle={tooltipItemStyle} labelStyle={tooltipLabelStyle} />
